@@ -25,6 +25,17 @@ const cmdArgs = parseArgs( Deno.args, {
 
 
 
+/** For more robust logging, use/create a propper logging framework. */
+function verbose( ...data : any[] ) {
+  if ( cmdArgs.verbose === true ) {
+    console.log( ...data );
+  }
+}
+verbose( '[I] Verbose messages enabled.\nArguments:', cmdArgs );
+
+
+
+
 const engine = Deno.execPath( ).split( '/' ).pop( );
 const executable = ( engine === 'deno' ) ? 'deno run ' + import.meta.url.split( '/' ).pop( ) : engine;
 const helpMessage = `Usage: ${executable} [options]
@@ -55,7 +66,12 @@ if ( isNaN( port ) || port <= 0 || port > 65534 ) { /** @todo: more precise limi
   Deno.exit( -1 );
 }
 
-let serverOptions = { port: port };
+let serverOptions = { 
+  port: port,
+  onListen( { port, hostname } ) {
+    verbose(`[I] Server started at http://${hostname}:${port}`);
+  }
+};
 let proto = "http";
 
 async function fileExists( path: string ) : boolean {
@@ -75,41 +91,44 @@ if ( typeof cmdArgs.cert === "string" || typeof cmdArgs.key === "string"  ) {
     console.error( `[E] Could not open '${cmdArgs.cert}'. Exiting ...` );
     Deno.exit( -2 );
   }
-  serverOptions.cert = Deno.readTextFileSync(cmdArgs.cert);
+  serverOptions.cert = Deno.readTextFileSync( cmdArgs.cert );
   if ( !isKeyFile ) {
     console.error( `[E] Could not open '${cmdArgs.key}'. Exiting ...` );
     Deno.exit( -3 );
   }
-  serverOptions.key = Deno.readTextFileSync(cmdArgs.key);
+  serverOptions.key = Deno.readTextFileSync( cmdArgs.key );
   proto = "https";
+  verbose( '[I] Both cert and key files exist, will try to serve using SLL' );
 }
 
-function getPathFromRequest(req: Request): string {
-  const url = new URL(req.url);
+function getPathFromRequest( req: Request ): string {
+  const url = new URL( req.url );
   let path = url.pathname;
-  if (path === "/") path = "/index.html";
-  return path.replace(/^\/+/, "");
+  if ( path === "/" ) path = "/index.html";
+  return path.replace( /^\/+/, "" );
 }
 
-Deno.serve( serverOptions, async (req: Request) => {
-  const upgrade = req.headers.get("upgrade")?.toLowerCase();
+Deno.serve( serverOptions, async ( req: Request ) => {
+  const upgrade = req.headers.get( "upgrade" )?.toLowerCase( );
 
   if (upgrade === "websocket") {
-    const { socket, response } = Deno.upgradeWebSocket(req);
-    socket.onopen = () => console.log("WS connected");
-    socket.onmessage = (e) => {
-      console.log("WS received:", e.data);
-      socket.send(`Echo: ${e.data}`);
+    const { socket, response } = Deno.upgradeWebSocket( req );
+    const accept = response.headers.get( "sec-websocket-accept" );
+    socket.onopen = ( ) => verbose( `[I] WebSocket connection(${accept}) initiated` );
+    socket.onmessage = ( e ) => {
+      verbose( `[I] WebSocket data received on connection(${accept}):`, JSON.stringify( e.data ) );
+      socket.send( `Echo: ${e.data}` );
     };
-    socket.onclose = () => console.log("WS closed");
-    socket.onerror = (e) => console.error("WS error", e);
+    socket.onclose = ( ) => verbose( `[I] WebSocket connection(${accept}) closed` );
+    socket.onerror = ( e ) => console.error( "WS error", e );
     return response;
   }
 
   const path : string = getPathFromRequest( req );
   
-  const dynamicRoutes: Record<string, (req: Request) => Response> = {
-    "index.html" : ( r ) => { return new Response(`<!DOCTYPE html>
+  const dynamicRoutes: Record< string, ( req: Request ) => Response > = {
+    "index.html" : ( r ) => { verbose( '[I] Serving request for index.html');
+                              return new Response(`<!DOCTYPE html>
                                                   <html>
                                                     <head>
                                                       <title>Deno GUI APP</title>
@@ -137,19 +156,20 @@ Deno.serve( serverOptions, async (req: Request) => {
                                 headers: {
                                   "content-type": "text/html; charset=utf-8",
                                 },
-                              })
+                              } )
                             }
   };
 
   if ( path in dynamicRoutes ) {
-    return dynamicRoutes[path](req);
+    return dynamicRoutes[ path ]( req );
   }
 
-  const asset = STATIC_ASSETS[path];
-  if (asset) {
+  const asset = STATIC_ASSETS[ path ];
+  if ( asset ) {
     const decompressed = gunzip( asset.data );
     const contentType = asset.mime;
-    return new Response( decompressed.slice(), {
+    verbose( `[I] Serving static asset ${path}` );
+    return new Response( decompressed.slice( ), {
       headers: {
         "content-type": asset.mime,
         "cache-control": "public, max-age=86400",

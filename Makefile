@@ -25,18 +25,9 @@ all: run
 run: ${APP_NAME}
 	./$(APP_NAME)
 
-interpret: 
-	deno run ${COMPILE_FLAGS} ${MAIN}
-
 build: ${APP_NAME}
 
 sslcert: src/ssl/localhost.crt src/ssl/localhost.key
-
-sslrun: ${APP_NAME} sslcert
-	./$(APP_NAME) --cert=src/ssl/localhost.crt --key=src/ssl/localhost.key
-
-sslinterpret: ${APP_NAME} sslcert
-	deno run ${COMPILE_FLAGS} ${MAIN} --port 8000 --cert=src/ssl/localhost.crt --key=src/ssl/localhost.key
 
 src/ssl/localhost.crt src/ssl/localhost.key &:
 	openssl req -x509 -out src/ssl/localhost.crt -keyout src/ssl/localhost.key \
@@ -68,11 +59,8 @@ help:
 	@echo "  make run          - Run the executable only (and build before if not present)"
 	@echo "  make build        - Build the executable."
 	@echo "  make assets       - Generate assets file."
-	@echo "  make interpret    - Run the script interpreted by system installed deno."
 	@echo "  make sslcert      - Generate a standard dummy certificate to be used when hosting on localhost"
-	@echo "  make sslrun       - Same as run but using the certs from sslcert"
-	@echo "  make sslinterpret - GSame as interpret but using the certs from sslcert"
 	@echo "  make clean        - Remove binary and generated assets"
 	@echo "  make help         - Show this help"
 
-.PHONY: all interpret run build clean help sslcert sslrun sslinterpret
+.PHONY: all run build clean help sslcert

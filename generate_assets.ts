@@ -1,6 +1,4 @@
-// embed_assets.ts
 import { gzip } from "https://deno.land/x/compress@v0.4.5/mod.ts";
-
 
 const HELP_MSG = `
 Usage:
@@ -76,10 +74,10 @@ const blacklist = (() => {
     const content = Deno.readTextFileSync(`${folder}/${ignoreFile}`);
     const lines = content.split("\n").map((l) => l.trim()).filter(Boolean);
     lines.push(ignoreFile);
-    log(`📄 Using ignore list from: ${ignoreFile}`);
+    log(`Using ignore list from: ${ignoreFile}`);
     return new Set(lines);
   } catch {
-    log(`⚠️  No ignore file found, continuing without it.`);
+    log(`No ignore file found, continuing without it.`);
     return new Set<string>([ignoreFile]);
   }
 })();
@@ -109,7 +107,7 @@ async function walk(current: string, base = "") {
 }
 
 await walk(folder);
-log(`📦 Collected ${collected.length} files`);
+log(`Collected ${collected.length} files`);
 
 // -------- WORKER SETUP --------
 const workerSrc = `
@@ -202,10 +200,10 @@ const finalOutput = outputChunks.join("\n");
 
 if (outputTarget === "STDOUT") {
   console.log(finalOutput);
-  log("✅ Output written to STDOUT");
+  log("Output written to STDOUT");
 } else {
   await Deno.writeTextFile(outputTarget, finalOutput);
-  log(`✅ Output written to ${outputTarget}`);
+  log(`Output written to ${outputTarget}`);
 }
 
 for (const worker of workers) {
