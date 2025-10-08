@@ -1,0 +1,1 @@
+This file is there so that the folders for the cert and static asset targets of make already exist. Git doe not have a notion of directories.
