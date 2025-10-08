@@ -36,7 +36,7 @@ src/ssl/localhost.crt src/ssl/localhost.key &:
 
 ${APP_NAME}: $(ASSET_OUTPUT)
 	@echo "Compiling app to $(APP_NAME)..."
-	deno compile $(DENO_COMPILE_FLAGS) --output $(APP_NAME) $(MAIN)
+	deno compile $(COMPILE_FLAGS) --output $(APP_NAME) $(MAIN)
 	@echo "Build complete: $(APP_NAME)"
 
 $(ASSET_OUTPUT):

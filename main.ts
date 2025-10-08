@@ -66,15 +66,15 @@ if ( isNaN( port ) || port <= 0 || port > 65534 ) { /** @todo: more precise limi
   Deno.exit( -1 );
 }
 
-let serverOptions = { 
+let serverOptions : any = { 
   port: port,
-  onListen( { port, hostname } ) {
+  onListen( { port, hostname } : any ) {
     verbose(`[I] Server started at http://${hostname}:${port}`);
   }
 };
 let proto = "http";
 
-async function fileExists( path: string ) : boolean {
+async function fileExists( path: string ) : Promise<boolean> {
   try {
     const stats = await Deno.lstat( path );
   } catch ( err ) {
@@ -85,18 +85,18 @@ async function fileExists( path: string ) : boolean {
 }
 
 if ( typeof cmdArgs.cert === "string" || typeof cmdArgs.key === "string"  ) {
-  const isCertFile = await fileExists( cmdArgs.cert );
-  const isKeyFile  = await fileExists( cmdArgs.key );
+  const isCertFile = await fileExists( cmdArgs.cert as string );
+  const isKeyFile  = await fileExists( cmdArgs.key as string );
   if ( !isCertFile ) {
     console.error( `[E] Could not open '${cmdArgs.cert}'. Exiting ...` );
     Deno.exit( -2 );
   }
-  serverOptions.cert = Deno.readTextFileSync( cmdArgs.cert );
+  serverOptions.cert = Deno.readTextFileSync( cmdArgs.cert as string );
   if ( !isKeyFile ) {
     console.error( `[E] Could not open '${cmdArgs.key}'. Exiting ...` );
     Deno.exit( -3 );
   }
-  serverOptions.key = Deno.readTextFileSync( cmdArgs.key );
+  serverOptions.key = Deno.readTextFileSync( cmdArgs.key as string  );
   proto = "https";
   verbose( '[I] Both cert and key files exist, will try to serve using SLL' );
 }
