@@ -1,22 +1,13 @@
-
-
-
-
-
 APP_NAME = DenoGUIApp
-MAIN = main.ts
+MAIN = main.js
 ASSET_FOLDER = static
 IGNORE_FILE = ignoreasset
-ASSET_OUTPUT = src/static_assets.ts
-
-
+ASSET_OUTPUT = src/static_assets.js
 
 
 
 ASSET_FLAGS = --allow-read --allow-write
 COMPILE_FLAGS = --allow-net --allow-read --allow-run
-
-
 
 
 
@@ -39,9 +30,11 @@ ${APP_NAME}: $(ASSET_OUTPUT)
 	deno compile $(COMPILE_FLAGS) --output $(APP_NAME) $(MAIN)
 	@echo "Build complete: $(APP_NAME)"
 
+assets: $(ASSET_OUTPUT)
+
 $(ASSET_OUTPUT):
 	@echo "Generating embedded assets..."
-	deno run $(ASSET_FLAGS) generate_assets.ts \
+	deno run $(ASSET_FLAGS) generate_assets.js \
 		--folder $(ASSET_FOLDER) \
 		--ignore $(IGNORE_FILE) \
 		--output $(ASSET_OUTPUT) \
@@ -63,4 +56,4 @@ help:
 	@echo "  make clean        - Remove binary and generated assets"
 	@echo "  make help         - Show this help"
 
-.PHONY: all run build clean help sslcert
+.PHONY: all run build assets clean help sslcert

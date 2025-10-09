@@ -2,7 +2,7 @@ import { parseArgs } from "jsr:@std/cli/parse-args";
 
 import { gunzip } from "https://deno.land/x/compress@v0.4.5/mod.ts";
 
-import { STATIC_ASSETS } from "./src/static_assets.ts";
+import { STATIC_ASSETS } from "./src/static_assets.js";
 
 
 
@@ -26,7 +26,7 @@ const cmdArgs = parseArgs( Deno.args, {
 
 
 /** For more robust logging, use/create a propper logging framework. */
-function verbose( ...data : any[] ) {
+function verbose( ...data ) {
   if ( cmdArgs.verbose === true ) {
     console.log( ...data );
   }
@@ -66,49 +66,49 @@ if ( isNaN( port ) || port <= 0 || port > 65534 ) { /** @todo: more precise limi
   Deno.exit( -1 );
 }
 
-let serverOptions : any = { 
+let serverOptions = { 
   port: port,
-  onListen( { port, hostname } : any ) {
+  onListen( { port, hostname } ) {
     verbose(`[I] Server started at http://${hostname}:${port}`);
   }
 };
 let proto = "http";
 
-async function fileExists( path: string ) : Promise<boolean> {
+async function fileExists( path ) {
   try {
     const stats = await Deno.lstat( path );
   } catch ( err ) {
-    //Debug log the err
+    verbose( '[I] Exception when checking file existence:', err );
     return false;
   }
   return true;
 }
 
 if ( typeof cmdArgs.cert === "string" || typeof cmdArgs.key === "string"  ) {
-  const isCertFile = await fileExists( cmdArgs.cert as string );
-  const isKeyFile  = await fileExists( cmdArgs.key as string );
+  const isCertFile = await fileExists( cmdArgs.cert );
+  const isKeyFile  = await fileExists( cmdArgs.key );
   if ( !isCertFile ) {
     console.error( `[E] Could not open '${cmdArgs.cert}'. Exiting ...` );
     Deno.exit( -2 );
   }
-  serverOptions.cert = Deno.readTextFileSync( cmdArgs.cert as string );
+  serverOptions.cert = Deno.readTextFileSync( cmdArgs.cert );
   if ( !isKeyFile ) {
     console.error( `[E] Could not open '${cmdArgs.key}'. Exiting ...` );
     Deno.exit( -3 );
   }
-  serverOptions.key = Deno.readTextFileSync( cmdArgs.key as string  );
+  serverOptions.key = Deno.readTextFileSync( cmdArgs.key );
   proto = "https";
   verbose( '[I] Both cert and key files exist, will try to serve using SLL' );
 }
 
-function getPathFromRequest( req: Request ): string {
+function getPathFromRequest( req ) {
   const url = new URL( req.url );
   let path = url.pathname;
   if ( path === "/" ) path = "/index.html";
   return path.replace( /^\/+/, "" );
 }
 
-Deno.serve( serverOptions, async ( req: Request ) => {
+Deno.serve( serverOptions, async ( req ) => {
   const upgrade = req.headers.get( "upgrade" )?.toLowerCase( );
 
   if (upgrade === "websocket") {
@@ -124,9 +124,9 @@ Deno.serve( serverOptions, async ( req: Request ) => {
     return response;
   }
 
-  const path : string = getPathFromRequest( req );
+  const path = getPathFromRequest( req );
   
-  const dynamicRoutes: Record< string, ( req: Request ) => Response > = {
+  const dynamicRoutes = {
     "index.html" : ( r ) => { verbose( '[I] Serving request for index.html');
                               return new Response(`<!DOCTYPE html>
                                                   <html>
@@ -161,7 +161,7 @@ Deno.serve( serverOptions, async ( req: Request ) => {
   };
 
   if ( path in dynamicRoutes ) {
-    return dynamicRoutes[ path ]( req );
+    return dynamicRoutes[path]( req );
   }
 
   const asset = STATIC_ASSETS[ path ];
@@ -177,7 +177,7 @@ Deno.serve( serverOptions, async ( req: Request ) => {
     });
   }
 
-  return new Response("404 Not Found", { status: 404 });
+  return new Response( "404 Not Found", { status: 404 } );
 } );
 
 
@@ -187,7 +187,7 @@ Deno.serve( serverOptions, async ( req: Request ) => {
 if ( cmdArgs.browser === true || typeof cmdArgs.browser === 'string' ) {
   const URL = `${proto}://${cmdArgs.host}:${port}`;
 
-  async function openBrowser(url: string) {
+  async function openBrowser( url ) {
     if ( typeof cmdArgs.browser === 'string' ) {
       try {
         await new Deno.Command(cmdArgs.browser, {
@@ -200,23 +200,23 @@ if ( cmdArgs.browser === true || typeof cmdArgs.browser === 'string' ) {
           Here is the Deno exception:\n`, err );
       }
     } else {
-      const cmds: Record<string, string[]> = {
+      const cmds = {
         windows: ["cmd", "/c", "start", "", url],
         darwin: ["open", url],
         linux: ["xdg-open", url],
       };
       const cmd = cmds[Deno.build.os];
       if (cmd) {
-        await new Deno.Command(cmd[0], {
-          args: cmd.slice(1),
+        await new Deno.Command( cmd[0], {
+          args: cmd.slice( 1 ),
           stdout: "null",
           stderr: "null",
-        }).spawn();
+        }).spawn( );
       } else {
-        console.warn("[W] Unsupported OS: Can not open browser automatically!");
+        console.warn( '[W] Unsupported OS: Could not open browser automatically!' );
       }
     }
   }
 
-  openBrowser(URL);
+  openBrowser( URL );
 }
